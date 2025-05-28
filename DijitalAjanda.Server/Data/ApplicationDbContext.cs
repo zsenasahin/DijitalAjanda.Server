@@ -9,7 +9,11 @@ namespace DijitalAjanda.Server.Data
             : base(options)
         {
         }
-
+        
         public DbSet<Users> Users { get; set; }
+        public DbSet<Events> Events { get; set; }
+        public DbSet<Focus> Focus { get; set; }
+        public DbSet<Backlog> Backlog { get; set; }
+        public DbSet<Goals> Goals { get; set; }
     }
 }

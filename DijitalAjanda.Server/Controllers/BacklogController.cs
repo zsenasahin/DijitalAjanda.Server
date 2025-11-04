@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using DijitalAjanda.Server.Data;
 using DijitalAjanda.Server.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,58 +13,100 @@ namespace DijitalAjanda.Server.Controllers
     public class BacklogController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+
         public BacklogController(ApplicationDbContext context)
         {
             _context = context;
         }
 
-        // GET: api/Backlog/user/5
         [HttpGet("user/{userId}")]
-        public async Task<IActionResult> GetAllForUser(int userId)
+        public async Task<IActionResult> GetUserBacklog(int userId)
         {
-            var records = await _context.Backlog
+            var backlogItems = await _context.Backlogs
                 .Where(b => b.UserId == userId)
-                .OrderBy(b => b.ParentId)
-                .ThenBy(b => b.Id)
+                .OrderByDescending(b => b.CreatedAt)
                 .ToListAsync();
-            return Ok(records);
+
+            return Ok(backlogItems);
         }
 
-        // POST: api/Backlog
-        [HttpPost]
-        public async Task<IActionResult> CreateBacklog([FromBody] Backlog backlog)
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetBacklogItem(int id)
         {
+            var backlogItem = await _context.Backlogs.FindAsync(id);
+            if (backlogItem == null)
+                return NotFound();
+
+            return Ok(backlogItem);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateBacklogItem([FromBody] Backlog backlog)
+        {
+            if (backlog.UserId <= 0)
+            {
+                return BadRequest("Kullanıcı ID'si gerekli");
+            }
+            
             backlog.CreatedAt = DateTime.UtcNow;
             backlog.UpdatedAt = DateTime.UtcNow;
-            _context.Backlog.Add(backlog);
+
+            _context.Backlogs.Add(backlog);
             await _context.SaveChangesAsync();
-            return Ok(backlog);
+
+            return CreatedAtAction(nameof(GetBacklogItem), new { id = backlog.Id }, backlog);
         }
 
-        // PUT: api/Backlog/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBacklog(int id, [FromBody] Backlog backlog)
+        public async Task<IActionResult> UpdateBacklogItem(int id, [FromBody] Backlog backlog)
         {
-            var existing = await _context.Backlog.FindAsync(id);
-            if (existing == null) return NotFound();
-            existing.Title = backlog.Title;
-            existing.Start = backlog.Start;
-            existing.End = backlog.End;
-            existing.ParentId = backlog.ParentId;
-            existing.UpdatedAt = DateTime.UtcNow;
+            var existingItem = await _context.Backlogs.FindAsync(id);
+            if (existingItem == null)
+                return NotFound();
+
+            existingItem.Title = backlog.Title;
+            existingItem.Description = backlog.Description;
+            existingItem.Priority = backlog.Priority;
+            existingItem.Status = backlog.Status;
+            existingItem.EstimatedEffort = backlog.EstimatedEffort;
+            existingItem.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
-            return Ok(existing);
+
+            return Ok(existingItem);
         }
 
-        // DELETE: api/Backlog/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBacklog(int id)
+        public async Task<IActionResult> DeleteBacklogItem(int id)
         {
-            var existing = await _context.Backlog.FindAsync(id);
-            if (existing == null) return NotFound();
-            _context.Backlog.Remove(existing);
+            var backlogItem = await _context.Backlogs.FindAsync(id);
+            if (backlogItem == null)
+                return NotFound();
+
+            _context.Backlogs.Remove(backlogItem);
             await _context.SaveChangesAsync();
-            return Ok();
+
+            return NoContent();
+        }
+
+        [HttpPut("{id}/status")]
+        public async Task<IActionResult> UpdateBacklogStatus(int id, [FromBody] BacklogStatusRequest request)
+        {
+            var backlogItem = await _context.Backlogs.FindAsync(id);
+            if (backlogItem == null)
+                return NotFound();
+
+            backlogItem.Status = request.Status;
+            backlogItem.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(backlogItem);
         }
     }
-} 
+
+    public class BacklogStatusRequest
+    {
+        public string Status { get; set; }
+    }
+}

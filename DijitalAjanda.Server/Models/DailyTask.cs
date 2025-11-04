@@ -1,27 +1,25 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace DijitalAjanda.Server.Models
 {
-    public class Backlog
+    public class DailyTask
     {
         public int Id { get; set; }
         
-        [Required]
-        public string Title { get; set; }
+        public DateTime Date { get; set; }
         
-        public string Description { get; set; }
-        
-        public string Priority { get; set; } = "Medium";
-        
-        public string Status { get; set; } = "New";
-        
-        public int? EstimatedEffort { get; set; }
+        public string Notes { get; set; }
         
         public int UserId { get; set; }
         [ForeignKey("UserId")]
-        public Users User { get; set; }
+        [JsonIgnore]
+        public Users? User { get; set; }
+        
+        public virtual ICollection<TaskItem> TaskItems { get; set; } = new List<TaskItem>();
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

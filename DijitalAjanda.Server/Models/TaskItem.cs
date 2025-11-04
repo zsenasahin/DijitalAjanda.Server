@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DijitalAjanda.Server.Models
 {
-    public class Backlog
+    public class TaskItem
     {
         public int Id { get; set; }
         
@@ -13,15 +13,17 @@ namespace DijitalAjanda.Server.Models
         
         public string Description { get; set; }
         
-        public string Priority { get; set; } = "Medium";
+        public bool IsCompleted { get; set; } = false;
         
-        public string Status { get; set; } = "New";
+        public string Priority { get; set; } = "medium";
         
-        public int? EstimatedEffort { get; set; }
+        public string Status { get; set; } = "todo";
         
-        public int UserId { get; set; }
-        [ForeignKey("UserId")]
-        public Users User { get; set; }
+        public DateTime? DueDate { get; set; }
+        
+        public int DailyTaskId { get; set; }
+        [ForeignKey("DailyTaskId")]
+        public DailyTask DailyTask { get; set; }
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

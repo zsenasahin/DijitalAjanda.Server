@@ -4,22 +4,25 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DijitalAjanda.Server.Models
 {
-    public class Focus
+    public class UserStats
     {
         public int Id { get; set; }
         
-        [Required]
-        public string Task { get; set; }
+        public int GoalsCompleted { get; set; } = 0;
         
-        public DateTime StartTime { get; set; }
+        public int HabitsCompleted { get; set; } = 0;
         
-        public DateTime? EndTime { get; set; }
+        public int ProjectsCompleted { get; set; } = 0;
         
-        public int? Duration { get; set; } // minutes
+        public int BooksRead { get; set; } = 0;
         
-        public int Distractions { get; set; } = 0;
+        public int JournalEntries { get; set; } = 0;
         
-        public string Notes { get; set; }
+        public int TotalFocusMinutes { get; set; } = 0;
+        
+        public int TotalPomodoroSessions { get; set; } = 0;
+        
+        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
         
         public int UserId { get; set; }
         [ForeignKey("UserId")]

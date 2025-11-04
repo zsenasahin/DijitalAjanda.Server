@@ -4,20 +4,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DijitalAjanda.Server.Models
 {
-    public class Backlog
+    public class UserProfile
     {
         public int Id { get; set; }
         
-        [Required]
-        public string Title { get; set; }
+        public string DisplayName { get; set; }
         
-        public string Description { get; set; }
+        public string Bio { get; set; }
         
-        public string Priority { get; set; } = "Medium";
+        public string Avatar { get; set; }
         
-        public string Status { get; set; } = "New";
+        public string Theme { get; set; } = "light";
         
-        public int? EstimatedEffort { get; set; }
+        public string Language { get; set; } = "tr";
         
         public int UserId { get; set; }
         [ForeignKey("UserId")]

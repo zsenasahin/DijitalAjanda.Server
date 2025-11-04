@@ -4,20 +4,20 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DijitalAjanda.Server.Models
 {
-    public class Backlog
+    public class UserWidget
     {
         public int Id { get; set; }
         
         [Required]
-        public string Title { get; set; }
+        public string WidgetType { get; set; }
         
-        public string Description { get; set; }
+        public int Position { get; set; } = 0;
         
-        public string Priority { get; set; } = "Medium";
+        public string Size { get; set; } = "medium"; // small, medium, large
         
-        public string Status { get; set; } = "New";
+        public bool IsVisible { get; set; } = true;
         
-        public int? EstimatedEffort { get; set; }
+        public string Settings { get; set; } = "{}";
         
         public int UserId { get; set; }
         [ForeignKey("UserId")]

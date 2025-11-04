@@ -4,20 +4,23 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DijitalAjanda.Server.Models
 {
-    public class Backlog
+    public class PomodoroSettings
     {
         public int Id { get; set; }
         
-        [Required]
-        public string Title { get; set; }
+        public int WorkDuration { get; set; } = 25; // minutes
         
-        public string Description { get; set; }
+        public int ShortBreakDuration { get; set; } = 5; // minutes
         
-        public string Priority { get; set; } = "Medium";
+        public int LongBreakDuration { get; set; } = 15; // minutes
         
-        public string Status { get; set; } = "New";
+        public int SessionsUntilLongBreak { get; set; } = 4;
         
-        public int? EstimatedEffort { get; set; }
+        public bool AutoStartBreaks { get; set; } = false;
+        
+        public bool AutoStartPomodoros { get; set; } = false;
+        
+        public bool SoundEnabled { get; set; } = true;
         
         public int UserId { get; set; }
         [ForeignKey("UserId")]

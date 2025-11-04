@@ -2,6 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using DijitalAjanda.Server.Data;
 using DijitalAjanda.Server.Models;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace DijitalAjanda.Server.Controllers
 {
@@ -16,139 +19,122 @@ namespace DijitalAjanda.Server.Controllers
             _context = context;
         }
 
-        // GET: api/Events
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Events>>> GetEvents()
+        [HttpGet("user/{userId}")]
+        public async Task<IActionResult> GetUserEvents(int userId)
         {
-            return await _context.Events.Include(e => e.User).ToListAsync();
+            var events = await _context.Events
+                .Where(e => e.UserId == userId)
+                .OrderBy(e => e.Date)
+                .ThenBy(e => e.Time)
+                .ToListAsync();
+
+            return Ok(events);
         }
 
-        // GET: api/Events/5
+        [HttpGet("user/{userId}/date/{date}")]
+        public async Task<IActionResult> GetEventsByDate(int userId, DateTime date)
+        {
+            var events = await _context.Events
+                .Where(e => e.UserId == userId && e.Date.Date == date.Date)
+                .OrderBy(e => e.Time)
+                .ToListAsync();
+
+            return Ok(events);
+        }
+
+        [HttpGet("user/{userId}/month/{year}/{month}")]
+        public async Task<IActionResult> GetEventsByMonth(int userId, int year, int month)
+        {
+            var startDate = new DateTime(year, month, 1);
+            var endDate = startDate.AddMonths(1).AddDays(-1);
+
+            var events = await _context.Events
+                .Where(e => e.UserId == userId && e.Date >= startDate && e.Date <= endDate)
+                .OrderBy(e => e.Date)
+                .ThenBy(e => e.Time)
+                .ToListAsync();
+
+            return Ok(events);
+        }
+
         [HttpGet("{id}")]
-        public async Task<ActionResult<Events>> GetEvent(int id)
+        public async Task<IActionResult> GetEvent(int id)
         {
-            var @event = await _context.Events.Include(e => e.User).FirstOrDefaultAsync(e => e.Id == id);
-
-            if (@event == null)
-            {
+            var eventItem = await _context.Events.FindAsync(id);
+            if (eventItem == null)
                 return NotFound();
-            }
 
-            return @event;
+            return Ok(eventItem);
         }
 
-        // POST: api/Events
         [HttpPost]
-        public async Task<ActionResult<Events>> CreateEvent(Events @event)
+        public async Task<IActionResult> CreateEvent([FromBody] Events eventItem)
         {
-            if (!ModelState.IsValid)
+            if (eventItem.UserId <= 0)
             {
-                return BadRequest(ModelState);
+                return BadRequest("Kullanıcı ID'si gerekli");
             }
-            try
-            {
-                if (@event == null)
-                {
-                    return BadRequest(new { message = "Event data is null" });
-                }
+            
+            eventItem.CreatedAt = DateTime.UtcNow;
+            eventItem.UpdatedAt = DateTime.UtcNow;
 
-                if (string.IsNullOrEmpty(@event.Title))
-                {
-                    return BadRequest(new { message = "Title is required" });
-                }
+            _context.Events.Add(eventItem);
+            await _context.SaveChangesAsync();
 
-                if (@event.Start == default(DateTime))
-                {
-                    return BadRequest(new { message = "Start date is required" });
-                }
-
-                if (@event.End == default(DateTime))
-                {
-                    return BadRequest(new { message = "End date is required" });
-                }
-
-                if (@event.Start > @event.End)
-                {
-                    return BadRequest(new { message = "Start date cannot be after end date" });
-                }
-
-                if (string.IsNullOrEmpty(@event.Category))
-                {
-                    return BadRequest(new { message = "Category is required" });
-                }
-
-                if (@event.UserId <= 0)
-                {
-                    return BadRequest(new { message = "Valid UserId is required" });
-                }
-
-                @event.CreatedAt = DateTime.UtcNow;
-                @event.UpdatedAt = DateTime.UtcNow;
-                
-                _context.Events.Add(@event);
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction(nameof(GetEvent), new { id = @event.Id }, @event);
-            }
-            catch (DbUpdateException ex)
-            {
-                return BadRequest(new { message = "Database error occurred", details = ex.InnerException?.Message ?? ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = "Error creating event", details = ex.ToString() });
-            }
+            return CreatedAtAction(nameof(GetEvent), new { id = eventItem.Id }, eventItem);
         }
 
-        // PUT: api/Events/5
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateEvent(int id, Events @event)
+        public async Task<IActionResult> UpdateEvent(int id, [FromBody] Events eventItem)
         {
-            if (id != @event.Id)
-            {
-                return BadRequest();
-            }
+            var existingEvent = await _context.Events.FindAsync(id);
+            if (existingEvent == null)
+                return NotFound();
 
-            _context.Entry(@event).State = EntityState.Modified;
+            existingEvent.Title = eventItem.Title;
+            existingEvent.Description = eventItem.Description;
+            existingEvent.Date = eventItem.Date;
+            existingEvent.Time = eventItem.Time;
+            existingEvent.Type = eventItem.Type;
+            existingEvent.Location = eventItem.Location;
+            existingEvent.UpdatedAt = DateTime.UtcNow;
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!EventExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok(existingEvent);
         }
 
-        // DELETE: api/Events/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteEvent(int id)
         {
-            var @event = await _context.Events.FindAsync(id);
-            if (@event == null)
-            {
+            var eventItem = await _context.Events.FindAsync(id);
+            if (eventItem == null)
                 return NotFound();
-            }
 
-            _context.Events.Remove(@event);
+            _context.Events.Remove(eventItem);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-        private bool EventExists(int id)
+        [HttpPut("{id}/type")]
+        public async Task<IActionResult> UpdateEventType(int id, [FromBody] EventTypeRequest request)
         {
-            return _context.Events.Any(e => e.Id == id);
+            var eventItem = await _context.Events.FindAsync(id);
+            if (eventItem == null)
+                return NotFound();
+
+            eventItem.Type = request.Type;
+            eventItem.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(eventItem);
         }
     }
-} 
+
+    public class EventTypeRequest
+    {
+        public string Type { get; set; }
+    }
+}

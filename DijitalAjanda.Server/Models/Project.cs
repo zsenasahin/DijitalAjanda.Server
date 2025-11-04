@@ -1,10 +1,12 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace DijitalAjanda.Server.Models
 {
-    public class Backlog
+    public class Project
     {
         public int Id { get; set; }
         
@@ -13,15 +15,25 @@ namespace DijitalAjanda.Server.Models
         
         public string Description { get; set; }
         
+        public string Status { get; set; } = "Planned";
+        
         public string Priority { get; set; } = "Medium";
         
-        public string Status { get; set; } = "New";
+        public DateTime StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         
-        public int? EstimatedEffort { get; set; }
+        public decimal Progress { get; set; } = 0; // 0-100
+        
+        public string Color { get; set; } = "#6366f1";
+        
+        public string Icon { get; set; } = "??";
+        
+        public string Tags { get; set; } = "";
         
         public int UserId { get; set; }
         [ForeignKey("UserId")]
-        public Users User { get; set; }
+        [JsonIgnore]
+        public Users? User { get; set; }
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

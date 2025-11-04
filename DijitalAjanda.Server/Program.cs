@@ -1,6 +1,10 @@
+
 using DijitalAjanda.Server.Data;
+using DijitalAjanda.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,19 +16,30 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+ options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Add custom services
+builder.Services.AddScoped<ITimerService, TimerService>();
+builder.Services.AddScoped<IStatsService, StatsService>();
 
-// CORS ayarlarýný yapýlandýrma
+// CORS ayarlarÄ±nÄ± yapÄ±landÄ±rma - Preflight istekleri iÃ§in doÄŸru yapÄ±landÄ±rma
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAllOrigins", policy =>
     {
-        policy.AllowAnyOrigin()  // Tüm origin'lere izin ver
-              .AllowAnyHeader()  // Tüm header'lara izin ver
-              .AllowAnyMethod(); // Tüm HTTP metodlarýna izin ver
+        policy.WithOrigins("http://localhost:3000") // Sadece React frontend'e izin ver
+              .AllowAnyHeader()  // TÃ¼m header'lara izin ver
+              .AllowAnyMethod()  // TÃ¼m HTTP metodlarÄ±na izin ver (OPTIONS dahil)
+              .AllowCredentials(); // Credentials'a izin ver
     });
 });
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 var app = builder.Build();
 
@@ -35,12 +50,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
-app.UseAuthorization();
+// CORS'u en baÅŸta kullan - Preflight istekleri (OPTIONS) iÃ§in kritik
 app.UseCors("AllowAllOrigins");
 
-app.MapControllers();
+// HTTPS redirection'Ä± kaldÄ±r - CORS sorununa neden oluyor
+// app.UseHttpsRedirection();
 
+app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();

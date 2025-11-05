@@ -3,6 +3,7 @@ using DijitalAjanda.Server.Data;
 using DijitalAjanda.Server.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -54,19 +55,50 @@ namespace DijitalAjanda.Server.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateBook([FromBody] Book book)
         {
-            // Frontend'den gelen UserId'yi kullan
-            if (book.UserId <= 0)
+            try
             {
-                return BadRequest("Kullanıcı ID'si gerekli");
+                // Frontend'den gelen UserId'yi kullan
+                if (book.UserId <= 0)
+                {
+                    return BadRequest($"Kullanıcı ID'si gerekli. Gelen UserId: {book.UserId}");
+                }
+
+                // Boş string'leri null'a çevir
+                if (string.IsNullOrWhiteSpace(book.Author))
+                    book.Author = null;
+                if (string.IsNullOrWhiteSpace(book.ISBN))
+                    book.ISBN = null;
+                if (string.IsNullOrWhiteSpace(book.Description))
+                    book.Description = null;
+                if (string.IsNullOrWhiteSpace(book.Review))
+                    book.Review = null;
+                if (string.IsNullOrWhiteSpace(book.CoverImage))
+                    book.CoverImage = null;
+
+                // Tags için null kontrolü
+                if (book.Tags == null)
+                {
+                    book.Tags = new List<string>();
+                }
+                
+                book.CreatedAt = DateTime.UtcNow;
+                book.UpdatedAt = DateTime.UtcNow;
+
+                _context.Books.Add(book);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetBook), new { id = book.Id }, book);
             }
-            
-            book.CreatedAt = DateTime.UtcNow;
-            book.UpdatedAt = DateTime.UtcNow;
-
-            _context.Books.Add(book);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetBook), new { id = book.Id }, book);
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                var innerMessage = dbEx.InnerException?.Message ?? "Bilinmeyen veritabanı hatası";
+                return BadRequest($"Kitap oluşturulurken veritabanı hatası: {innerMessage}");
+            }
+            catch (Exception ex)
+            {
+                var innerMessage = ex.InnerException?.Message ?? ex.Message;
+                return BadRequest($"Kitap oluşturulurken hata: {ex.Message}. Inner: {innerMessage}");
+            }
         }
 
         [HttpPut("{id}")]
@@ -77,18 +109,18 @@ namespace DijitalAjanda.Server.Controllers
                 return NotFound();
 
             existingBook.Title = book.Title;
-            existingBook.Author = book.Author;
-            existingBook.ISBN = book.ISBN;
-            existingBook.Description = book.Description;
+            existingBook.Author = string.IsNullOrWhiteSpace(book.Author) ? null : book.Author;
+            existingBook.ISBN = string.IsNullOrWhiteSpace(book.ISBN) ? null : book.ISBN;
+            existingBook.Description = string.IsNullOrWhiteSpace(book.Description) ? null : book.Description;
             existingBook.TotalPages = book.TotalPages;
             existingBook.CurrentPage = book.CurrentPage;
             existingBook.Status = book.Status;
             existingBook.Rating = book.Rating;
-            existingBook.Review = book.Review;
+            existingBook.Review = string.IsNullOrWhiteSpace(book.Review) ? null : book.Review;
             existingBook.StartedDate = book.StartedDate;
             existingBook.FinishedDate = book.FinishedDate;
-            existingBook.CoverImage = book.CoverImage;
-            existingBook.Tags = book.Tags;
+            existingBook.CoverImage = string.IsNullOrWhiteSpace(book.CoverImage) ? null : book.CoverImage;
+            existingBook.Tags = book.Tags ?? new List<string>();
             existingBook.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();

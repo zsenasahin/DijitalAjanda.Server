@@ -14,11 +14,11 @@ namespace DijitalAjanda.Server.Models
         [Required]
         public string Title { get; set; }
         
-        public string Author { get; set; }
+        public string? Author { get; set; }
         
-        public string ISBN { get; set; }
+        public string? ISBN { get; set; }
         
-        public string Description { get; set; }
+        public string? Description { get; set; }
         
         public int? TotalPages { get; set; }
         
@@ -28,13 +28,13 @@ namespace DijitalAjanda.Server.Models
         
         public int Rating { get; set; } = 0;
         
-        public string Review { get; set; }
+        public string? Review { get; set; }
         
         public DateTime? StartedDate { get; set; }
         
         public DateTime? FinishedDate { get; set; }
         
-        public string CoverImage { get; set; }
+        public string? CoverImage { get; set; }
         
         public List<string> Tags { get; set; }
         

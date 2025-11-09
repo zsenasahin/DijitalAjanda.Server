@@ -60,6 +60,8 @@ namespace DijitalAjanda.Server.Controllers
                 return BadRequest("Kullanıcı ID'si gerekli");
             }
             
+            // User navigation property'sini null olarak ayarla (UserId'den otomatik çözülecek)
+            focusSession.User = null;
             focusSession.CreatedAt = DateTime.UtcNow;
             focusSession.UpdatedAt = DateTime.UtcNow;
 

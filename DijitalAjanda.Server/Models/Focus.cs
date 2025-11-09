@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace DijitalAjanda.Server.Models
 {
@@ -23,7 +24,8 @@ namespace DijitalAjanda.Server.Models
         
         public int UserId { get; set; }
         [ForeignKey("UserId")]
-        public Users User { get; set; }
+        [JsonIgnore]
+        public Users? User { get; set; }
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }

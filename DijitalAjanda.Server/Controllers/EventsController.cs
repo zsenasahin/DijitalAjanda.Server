@@ -24,8 +24,7 @@ namespace DijitalAjanda.Server.Controllers
         {
             var events = await _context.Events
                 .Where(e => e.UserId == userId)
-                .OrderBy(e => e.Date)
-                .ThenBy(e => e.Time)
+                .OrderBy(e => e.Start)
                 .ToListAsync();
 
             return Ok(events);
@@ -35,8 +34,8 @@ namespace DijitalAjanda.Server.Controllers
         public async Task<IActionResult> GetEventsByDate(int userId, DateTime date)
         {
             var events = await _context.Events
-                .Where(e => e.UserId == userId && e.Date.Date == date.Date)
-                .OrderBy(e => e.Time)
+                .Where(e => e.UserId == userId && e.Start.Date == date.Date)
+                .OrderBy(e => e.Start)
                 .ToListAsync();
 
             return Ok(events);
@@ -49,9 +48,8 @@ namespace DijitalAjanda.Server.Controllers
             var endDate = startDate.AddMonths(1).AddDays(-1);
 
             var events = await _context.Events
-                .Where(e => e.UserId == userId && e.Date >= startDate && e.Date <= endDate)
-                .OrderBy(e => e.Date)
-                .ThenBy(e => e.Time)
+                .Where(e => e.UserId == userId && e.Start >= startDate && e.Start <= endDate)
+                .OrderBy(e => e.Start)
                 .ToListAsync();
 
             return Ok(events);
@@ -75,6 +73,11 @@ namespace DijitalAjanda.Server.Controllers
                 return BadRequest("Kullanıcı ID'si gerekli");
             }
             
+            // Nullable alanlar için default değerler
+            eventItem.Description = eventItem.Description ?? string.Empty;
+            eventItem.Category = eventItem.Category ?? "work";
+            
+            eventItem.User = null; // Navigation property'yi null yap
             eventItem.CreatedAt = DateTime.UtcNow;
             eventItem.UpdatedAt = DateTime.UtcNow;
 
@@ -92,11 +95,10 @@ namespace DijitalAjanda.Server.Controllers
                 return NotFound();
 
             existingEvent.Title = eventItem.Title;
-            existingEvent.Description = eventItem.Description;
-            existingEvent.Date = eventItem.Date;
-            existingEvent.Time = eventItem.Time;
-            existingEvent.Type = eventItem.Type;
-            existingEvent.Location = eventItem.Location;
+            existingEvent.Start = eventItem.Start;
+            existingEvent.End = eventItem.End;
+            existingEvent.Description = eventItem.Description ?? string.Empty;
+            existingEvent.Category = eventItem.Category ?? "work";
             existingEvent.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -117,14 +119,14 @@ namespace DijitalAjanda.Server.Controllers
             return NoContent();
         }
 
-        [HttpPut("{id}/type")]
-        public async Task<IActionResult> UpdateEventType(int id, [FromBody] EventTypeRequest request)
+        [HttpPut("{id}/category")]
+        public async Task<IActionResult> UpdateEventCategory(int id, [FromBody] EventCategoryRequest request)
         {
             var eventItem = await _context.Events.FindAsync(id);
             if (eventItem == null)
                 return NotFound();
 
-            eventItem.Type = request.Type;
+            eventItem.Category = request.Category ?? "work";
             eventItem.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -133,8 +135,8 @@ namespace DijitalAjanda.Server.Controllers
         }
     }
 
-    public class EventTypeRequest
+    public class EventCategoryRequest
     {
-        public string Type { get; set; }
+        public string Category { get; set; }
     }
 }

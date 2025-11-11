@@ -106,12 +106,26 @@ namespace DijitalAjanda.Server.Controllers
             if (habit == null)
                 return NotFound();
 
+            // Date'i parse et (ISO string veya DateTime olabilir)
+            DateTime completedDate;
+            if (request.Date == default(DateTime))
+            {
+                completedDate = DateTime.UtcNow;
+            }
+            else
+            {
+                completedDate = request.Date.Kind == DateTimeKind.Unspecified 
+                    ? DateTime.SpecifyKind(request.Date, DateTimeKind.Utc) 
+                    : request.Date.ToUniversalTime();
+            }
+
             var completion = new HabitCompletion
             {
                 HabitId = id,
-                //CompletedAt = request.Date,
+                CompletedAt = completedDate,
                 Count = request.Count,
-                Notes = request.Notes
+                Notes = request.Notes ?? string.Empty,
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.HabitCompletions.Add(completion);

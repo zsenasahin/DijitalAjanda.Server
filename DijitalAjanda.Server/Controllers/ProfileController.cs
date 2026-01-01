@@ -162,6 +162,58 @@ namespace DijitalAjanda.Server.Controllers
 
             return Ok(userProfile);
         }
+
+        /// <summary>
+        /// Kullanıcının günlük yazılarının duygu durum geçmişini getirir.
+        /// Profil sayfasındaki grafik için kullanılır.
+        /// </summary>
+        [HttpGet("mood-history/{userId}")]
+        public async Task<IActionResult> GetMoodHistory(int userId, [FromQuery] int days = 30)
+        {
+            var startDate = DateTime.UtcNow.AddDays(-days);
+
+            var moodHistory = await _context.JournalEntries
+                .Where(j => j.UserId == userId && j.CreatedAt >= startDate)
+                .Include(j => j.Sentiment)
+                .OrderBy(j => j.Date)
+                .Select(j => new MoodHistoryItem
+                {
+                    Date = j.Date,
+                    Title = j.Title,
+                    SentimentLabel = j.Sentiment != null ? j.Sentiment.SentimentLabel : "Neutral",
+                    SentimentScore = j.Sentiment != null ? j.Sentiment.SentimentScore : 0.5f,
+                    Mood = j.Mood,
+                    MoodScore = j.MoodScore
+                })
+                .ToListAsync();
+
+            // Özet istatistikler
+            var summary = new MoodSummary
+            {
+                TotalEntries = moodHistory.Count,
+                PositiveCount = moodHistory.Count(m => m.SentimentLabel == "Positive"),
+                NegativeCount = moodHistory.Count(m => m.SentimentLabel == "Negative"),
+                NeutralCount = moodHistory.Count(m => m.SentimentLabel == "Neutral"),
+                AverageScore = moodHistory.Count > 0 ? moodHistory.Average(m => m.SentimentScore) : 0.5f
+            };
+
+            return Ok(new { history = moodHistory, summary = summary });
+        }
+
+        /// <summary>
+        /// Belirli bir günlük yazısının sentiment analizini getirir.
+        /// </summary>
+        [HttpGet("sentiment/{journalEntryId}")]
+        public async Task<IActionResult> GetEntrySentiment(int journalEntryId)
+        {
+            var sentiment = await _context.JournalSentiments
+                .FirstOrDefaultAsync(s => s.JournalEntryId == journalEntryId);
+
+            if (sentiment == null)
+                return NotFound("Bu günlük yazısı için sentiment analizi bulunamadı.");
+
+            return Ok(sentiment);
+        }
     }
 
     public class ThemeRequest
@@ -172,5 +224,30 @@ namespace DijitalAjanda.Server.Controllers
     public class LanguageRequest
     {
         public string Language { get; set; }
+    }
+
+    /// <summary>
+    /// Mood history API response için DTO
+    /// </summary>
+    public class MoodHistoryItem
+    {
+        public DateTime Date { get; set; }
+        public string Title { get; set; }
+        public string SentimentLabel { get; set; }
+        public float SentimentScore { get; set; }
+        public string? Mood { get; set; }
+        public int MoodScore { get; set; }
+    }
+
+    /// <summary>
+    /// Mood özet istatistikleri için DTO
+    /// </summary>
+    public class MoodSummary
+    {
+        public int TotalEntries { get; set; }
+        public int PositiveCount { get; set; }
+        public int NegativeCount { get; set; }
+        public int NeutralCount { get; set; }
+        public float AverageScore { get; set; }
     }
 }

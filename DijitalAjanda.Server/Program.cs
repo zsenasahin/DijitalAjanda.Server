@@ -26,6 +26,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add custom services
 builder.Services.AddScoped<ITimerService, TimerService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
+builder.Services.AddScoped<SentimentAnalysisService>(); // Sentiment Analysis Service
 builder.Services.AddHttpClient();
 builder.Services.AddHttpClient<IGeminiService, GeminiService>(); // Gemini için tipli HttpClient
 

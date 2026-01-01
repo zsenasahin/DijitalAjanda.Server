@@ -4,6 +4,7 @@ using DijitalAjanda.Server.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DijitalAjanda.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260101190951_AddJournalSentimentTable")]
+    partial class AddJournalSentimentTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -62,7 +65,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Backlogs", (string)null);
+                    b.ToTable("Backlogs");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.Book", b =>
@@ -128,7 +131,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Books", (string)null);
+                    b.ToTable("Books");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.DailyTask", b =>
@@ -161,7 +164,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("DailyTasks", (string)null);
+                    b.ToTable("DailyTasks");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.Events", b =>
@@ -201,7 +204,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Events", (string)null);
+                    b.ToTable("Events");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.Focus", b =>
@@ -245,7 +248,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Focus", (string)null);
+                    b.ToTable("Focus");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.Goal", b =>
@@ -326,7 +329,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Goals", (string)null);
+                    b.ToTable("Goals");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.Habit", b =>
@@ -391,7 +394,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Habits", (string)null);
+                    b.ToTable("Habits");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.HabitCompletion", b =>
@@ -421,7 +424,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("HabitId");
 
-                    b.ToTable("HabitCompletions", (string)null);
+                    b.ToTable("HabitCompletions");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.JournalEntry", b =>
@@ -481,7 +484,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("JournalEntries", (string)null);
+                    b.ToTable("JournalEntries");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.JournalSentiment", b =>
@@ -511,7 +514,7 @@ namespace DijitalAjanda.Server.Migrations
                     b.HasIndex("JournalEntryId")
                         .IsUnique();
 
-                    b.ToTable("JournalSentiments", (string)null);
+                    b.ToTable("JournalSentiments");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.KanbanBoard", b =>
@@ -543,7 +546,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("KanbanBoards", (string)null);
+                    b.ToTable("KanbanBoards");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.PomodoroSettings", b =>
@@ -589,7 +592,7 @@ namespace DijitalAjanda.Server.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("PomodoroSettings", (string)null);
+                    b.ToTable("PomodoroSettings");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.Project", b =>
@@ -650,7 +653,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Projects", (string)null);
+                    b.ToTable("Projects");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.TaskItem", b =>
@@ -700,7 +703,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("ProjectId");
 
-                    b.ToTable("TaskItems", (string)null);
+                    b.ToTable("TaskItems");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.TaskStatusItem", b =>
@@ -739,7 +742,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("KanbanBoardId");
 
-                    b.ToTable("TaskStatusItems", (string)null);
+                    b.ToTable("TaskStatusItems");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.TimerSession", b =>
@@ -787,7 +790,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("TimerSessions", (string)null);
+                    b.ToTable("TimerSessions");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.UserProfile", b =>
@@ -832,7 +835,7 @@ namespace DijitalAjanda.Server.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserProfiles", (string)null);
+                    b.ToTable("UserProfiles");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.UserStats", b =>
@@ -881,7 +884,7 @@ namespace DijitalAjanda.Server.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("UserStats", (string)null);
+                    b.ToTable("UserStats");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.UserWidget", b =>
@@ -923,7 +926,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("UserWidgets", (string)null);
+                    b.ToTable("UserWidgets");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.Users", b =>
@@ -948,7 +951,7 @@ namespace DijitalAjanda.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("DijitalAjanda.Server.Models.Backlog", b =>

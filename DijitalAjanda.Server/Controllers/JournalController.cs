@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using DijitalAjanda.Server.Data;
 using DijitalAjanda.Server.Models;
+using DijitalAjanda.Server.Services;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
@@ -13,10 +14,12 @@ namespace DijitalAjanda.Server.Controllers
     public class JournalController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly SentimentAnalysisService _sentimentService;
 
-        public JournalController(ApplicationDbContext context)
+        public JournalController(ApplicationDbContext context, SentimentAnalysisService sentimentService)
         {
             _context = context;
+            _sentimentService = sentimentService;
         }
 
         [HttpGet("user/{userId}")]
@@ -75,6 +78,20 @@ namespace DijitalAjanda.Server.Controllers
             _context.JournalEntries.Add(entry);
             await _context.SaveChangesAsync();
 
+            // Arka planda sentiment analizi yap
+            if (!string.IsNullOrEmpty(entry.Content))
+            {
+                try
+                {
+                    await _sentimentService.AnalyzeAndSaveAsync(entry.Id, entry.Content);
+                }
+                catch (Exception ex)
+                {
+                    // Sentiment analizi başarısız olsa bile günlük kaydedilmiş olsun
+                    Console.WriteLine($"Sentiment analizi hatası: {ex.Message}");
+                }
+            }
+
             return CreatedAtAction(nameof(GetEntry), new { id = entry.Id }, entry);
         }
 
@@ -120,6 +137,19 @@ namespace DijitalAjanda.Server.Controllers
             existingEntry.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+
+            // Günlük güncellendiğinde sentiment'ı da güncelle
+            if (!string.IsNullOrEmpty(entry.Content))
+            {
+                try
+                {
+                    await _sentimentService.UpdateSentimentAsync(id, entry.Content);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Sentiment güncelleme hatası: {ex.Message}");
+                }
+            }
 
             return Ok(existingEntry);
         }

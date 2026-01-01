@@ -42,5 +42,10 @@ namespace DijitalAjanda.Server.Models
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
+        
+        /// <summary>
+        /// Günlük yazısının duygu durum analizi sonucu (Navigation Property)
+        /// </summary>
+        public JournalSentiment? Sentiment { get; set; }
     }
 }

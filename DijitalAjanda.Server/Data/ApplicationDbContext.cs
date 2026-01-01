@@ -34,6 +34,7 @@ namespace DijitalAjanda.Server.Data
         public DbSet<KanbanBoard> KanbanBoards { get; set; }
         public DbSet<TaskStatusItem> TaskStatusItems { get; set; }
         public DbSet<UserProfile> UserProfiles { get; set; }
+        public DbSet<JournalSentiment> JournalSentiments { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -104,6 +105,17 @@ namespace DijitalAjanda.Server.Data
             modelBuilder.Entity<Project>()
                 .Property(p => p.Status)
                 .HasColumnType("nvarchar(max)");
+
+            // Configure JournalSentiment relationship (1:1 with JournalEntry)
+            modelBuilder.Entity<JournalSentiment>()
+                .HasOne(js => js.JournalEntry)
+                .WithOne(je => je.Sentiment)
+                .HasForeignKey<JournalSentiment>(js => js.JournalEntryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<JournalSentiment>()
+                .HasIndex(js => js.JournalEntryId)
+                .IsUnique();
         }
     }
 }

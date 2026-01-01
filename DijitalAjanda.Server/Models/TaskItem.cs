@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace DijitalAjanda.Server.Models
 {
@@ -22,14 +23,19 @@ namespace DijitalAjanda.Server.Models
         public DateTime? DueDate { get; set; }
         
         public int? ProjectId { get; set; }
+        
         [ForeignKey("ProjectId")]
+        [JsonIgnore]
         public Project? Project { get; set; }
         
         public int DailyTaskId { get; set; }
+        
         [ForeignKey("DailyTaskId")]
-        public DailyTask DailyTask { get; set; }
+        [JsonIgnore]
+        public DailyTask? DailyTask { get; set; }
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
     }
 }
+

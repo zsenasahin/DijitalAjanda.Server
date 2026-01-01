@@ -107,7 +107,9 @@ namespace DijitalAjanda.Server.Controllers
                         {
                             UserId = request.UserId,
                             Date = today,
+                            Title = "Günlük Görevler",
                             Notes = null,
+                            IsCompleted = false,
                             CreatedAt = DateTime.UtcNow,
                             UpdatedAt = DateTime.UtcNow
                         };

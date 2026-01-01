@@ -22,13 +22,21 @@ namespace DijitalAjanda.Server.Controllers
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetUserTasks(int userId)
         {
-            var tasks = await _context.TaskItems
-                .Where(t => t.DailyTask.UserId == userId)
-                .Include(t => t.DailyTask)
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync();
+            try
+            {
+                var tasks = await _context.TaskItems
+                    .Include(t => t.DailyTask)
+                    .Include(t => t.Project)
+                    .Where(t => t.DailyTask != null && t.DailyTask.UserId == userId)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .ToListAsync();
 
-            return Ok(tasks);
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Görevler yüklenirken bir hata oluştu", error = ex.Message });
+            }
         }
 
         [HttpGet("user/{userId}/status/{status}")]
@@ -60,6 +68,7 @@ namespace DijitalAjanda.Server.Controllers
         {
             var task = await _context.TaskItems
                 .Include(t => t.DailyTask)
+                .Include(t => t.Project)
                 .FirstOrDefaultAsync(t => t.Id == id);
 
             if (task == null)
@@ -69,40 +78,132 @@ namespace DijitalAjanda.Server.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateTask([FromBody] TaskItem task)
+        public async Task<IActionResult> CreateTask([FromBody] TaskCreateRequest request)
         {
-            if (task.DailyTaskId <= 0)
+            try
             {
-                return BadRequest("Günlük görev ID'si gerekli");
+                if (string.IsNullOrWhiteSpace(request.Title))
+                {
+                    return BadRequest(new { message = "Görev başlığı gereklidir" });
+                }
+
+                if (request.UserId <= 0)
+                {
+                    return BadRequest(new { message = "Kullanıcı ID'si gereklidir" });
+                }
+
+                // Eğer DailyTaskId verilmemişse ama UserId varsa, bugünün DailyTask'ini bul veya oluştur
+                int dailyTaskId = request.DailyTaskId ?? 0;
+                
+                if (dailyTaskId <= 0 && request.UserId > 0)
+                {
+                    var today = DateTime.Today;
+                    var dailyTask = await _context.DailyTasks
+                        .FirstOrDefaultAsync(dt => dt.UserId == request.UserId && dt.Date.Date == today);
+                    
+                    if (dailyTask == null)
+                    {
+                        dailyTask = new DailyTask
+                        {
+                            UserId = request.UserId,
+                            Date = today,
+                            Notes = null,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                        _context.DailyTasks.Add(dailyTask);
+                        await _context.SaveChangesAsync();
+                    }
+                    
+                    dailyTaskId = dailyTask.Id;
+                }
+                
+                if (dailyTaskId <= 0)
+                {
+                    return BadRequest(new { message = "Günlük görev ID'si veya Kullanıcı ID'si gerekli" });
+                }
+                
+                var task = new TaskItem
+                {
+                    Title = request.Title.Trim(),
+                    Description = request.Description ?? null,
+                    Priority = !string.IsNullOrWhiteSpace(request.Priority) ? request.Priority.ToLower() : "medium",
+                    Status = !string.IsNullOrWhiteSpace(request.Status) ? request.Status.ToLower() : "todo",
+                    DueDate = request.DueDate,
+                    ProjectId = request.ProjectId > 0 ? request.ProjectId : null,
+                    DailyTaskId = dailyTaskId,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    IsCompleted = false
+                };
+
+                _context.TaskItems.Add(task);
+                await _context.SaveChangesAsync();
+
+                // Include ile tekrar yükle
+                var createdTask = await _context.TaskItems
+                    .Include(t => t.DailyTask)
+                    .Include(t => t.Project)
+                    .FirstOrDefaultAsync(t => t.Id == task.Id);
+
+                return CreatedAtAction(nameof(GetTask), new { id = task.Id }, createdTask);
             }
-            
-            task.CreatedAt = DateTime.UtcNow;
-            task.UpdatedAt = DateTime.UtcNow;
-
-            _context.TaskItems.Add(task);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetTask), new { id = task.Id }, task);
+            catch (Microsoft.EntityFrameworkCore.DbUpdateException dbEx)
+            {
+                var innerException = dbEx.InnerException?.Message ?? dbEx.Message;
+                return StatusCode(500, new { 
+                    message = "Görev oluşturulurken bir hata oluştu", 
+                    error = innerException,
+                    details = dbEx.ToString()
+                });
+            }
+            catch (Exception ex)
+            {
+                var innerException = ex.InnerException?.Message ?? ex.Message;
+                return StatusCode(500, new { 
+                    message = "Görev oluşturulurken bir hata oluştu", 
+                    error = innerException,
+                    details = ex.ToString()
+                });
+            }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskItem task)
+        public async Task<IActionResult> UpdateTask(int id, [FromBody] TaskUpdateRequest request)
         {
-            var existingTask = await _context.TaskItems.FindAsync(id);
-            if (existingTask == null)
-                return NotFound();
+            try
+            {
+                var existingTask = await _context.TaskItems.FindAsync(id);
+                if (existingTask == null)
+                    return NotFound();
 
-            existingTask.Title = task.Title;
-            existingTask.Description = task.Description;
-            existingTask.IsCompleted = task.IsCompleted;
-            existingTask.Priority = task.Priority;
-            existingTask.Status = task.Status;
-            existingTask.DueDate = task.DueDate;
-            existingTask.UpdatedAt = DateTime.UtcNow;
+                if (string.IsNullOrWhiteSpace(request.Title))
+                {
+                    return BadRequest(new { message = "Görev başlığı gereklidir" });
+                }
 
-            await _context.SaveChangesAsync();
+                existingTask.Title = request.Title.Trim();
+                existingTask.Description = request.Description ?? string.Empty;
+                existingTask.Priority = request.Priority?.ToLower() ?? existingTask.Priority;
+                existingTask.Status = request.Status?.ToLower() ?? existingTask.Status;
+                existingTask.DueDate = request.DueDate;
+                existingTask.ProjectId = request.ProjectId;
+                existingTask.UpdatedAt = DateTime.UtcNow;
 
-            return Ok(existingTask);
+                await _context.SaveChangesAsync();
+
+                // Include ile tekrar yükle
+                var updatedTask = await _context.TaskItems
+                    .Include(t => t.DailyTask)
+                    .Include(t => t.Project)
+                    .FirstOrDefaultAsync(t => t.Id == id);
+
+                return Ok(updatedTask);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Görev güncellenirken bir hata oluştu", error = ex.Message });
+            }
         }
 
         [HttpDelete("{id}")]
@@ -125,14 +226,16 @@ namespace DijitalAjanda.Server.Controllers
             if (task == null)
                 return NotFound();
 
-            task.Status = request.Status;
+            // Status'u küçük harfe çevir
+            var statusLower = request.Status?.ToLower() ?? "todo";
+            task.Status = statusLower;
             task.UpdatedAt = DateTime.UtcNow;
 
-            if (request.Status == "completed")
+            if (statusLower == "done" || statusLower == "completed")
             {
                 task.IsCompleted = true;
             }
-            else if (request.Status == "todo" || request.Status == "inprogress")
+            else if (statusLower == "todo" || statusLower == "inprogress" || statusLower == "review")
             {
                 task.IsCompleted = false;
             }
@@ -213,5 +316,27 @@ namespace DijitalAjanda.Server.Controllers
     public class TaskPriorityRequest
     {
         public string Priority { get; set; }
+    }
+
+    public class TaskCreateRequest
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Priority { get; set; }
+        public string Status { get; set; }
+        public DateTime? DueDate { get; set; }
+        public int? DailyTaskId { get; set; }
+        public int? ProjectId { get; set; }
+        public int UserId { get; set; }
+    }
+
+    public class TaskUpdateRequest
+    {
+        public string Title { get; set; }
+        public string Description { get; set; }
+        public string Priority { get; set; }
+        public string Status { get; set; }
+        public DateTime? DueDate { get; set; }
+        public int? ProjectId { get; set; }
     }
 }

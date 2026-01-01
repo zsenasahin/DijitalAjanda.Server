@@ -26,6 +26,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Add custom services
 builder.Services.AddScoped<ITimerService, TimerService>();
 builder.Services.AddScoped<IStatsService, StatsService>();
+builder.Services.AddHttpClient();
+builder.Services.AddHttpClient<IGeminiService, GeminiService>(); // Gemini için tipli HttpClient
 
 // CORS ayarlarını yapılandırma - Preflight istekleri için doğru yapılandırma
 builder.Services.AddCors(options =>

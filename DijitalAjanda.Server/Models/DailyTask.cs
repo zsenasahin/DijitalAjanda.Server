@@ -12,7 +12,9 @@ namespace DijitalAjanda.Server.Models
         
         public DateTime Date { get; set; }
         
-        public string Notes { get; set; }
+        public string? Title { get; set; }
+        
+        public string? Notes { get; set; }
         
         public int UserId { get; set; }
         [ForeignKey("UserId")]

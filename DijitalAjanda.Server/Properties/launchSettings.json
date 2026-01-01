@@ -16,7 +16,8 @@
       "launchUrl": "swagger",
       "applicationUrl": "http://localhost:5000",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "GEMINI_API_KEY": "AIzaSyCEZeFgdhXAIJh0bI1k-dmlU2RQg3F6agc"
       }
     },
     "IIS Express": {
@@ -24,7 +25,8 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "GEMINI_API_KEY": "AIzaSyCEZeFgdhXAIJh0bI1k-dmlU2RQg3F6agc"
       }
     }
   }

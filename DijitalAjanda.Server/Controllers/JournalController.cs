@@ -58,8 +58,19 @@ namespace DijitalAjanda.Server.Controllers
                 return BadRequest("Kullanıcı ID'si gerekli");
             }
             
+            // Date'i UTC'ye çevir
+            if (entry.Date.Kind == DateTimeKind.Unspecified)
+            {
+                entry.Date = DateTime.SpecifyKind(entry.Date, DateTimeKind.Utc);
+            }
+            else
+            {
+                entry.Date = entry.Date.ToUniversalTime();
+            }
+            
             entry.CreatedAt = DateTime.UtcNow;
             entry.UpdatedAt = DateTime.UtcNow;
+            entry.User = null; // Navigation property'yi null yap
 
             _context.JournalEntries.Add(entry);
             await _context.SaveChangesAsync();
@@ -74,15 +85,38 @@ namespace DijitalAjanda.Server.Controllers
             if (existingEntry == null)
                 return NotFound();
 
+            // Date'i UTC'ye çevir
+            if (entry.Date.Kind == DateTimeKind.Unspecified)
+            {
+                existingEntry.Date = DateTime.SpecifyKind(entry.Date, DateTimeKind.Utc);
+            }
+            else
+            {
+                existingEntry.Date = entry.Date.ToUniversalTime();
+            }
+            
             existingEntry.Title = entry.Title;
-            existingEntry.Content = entry.Content;
-            existingEntry.Mood = entry.Mood;
+            existingEntry.Content = entry.Content ?? string.Empty;
+            existingEntry.Mood = entry.Mood ?? string.Empty;
             existingEntry.MoodScore = entry.MoodScore;
-            existingEntry.Weather = entry.Weather;
-            existingEntry.Location = entry.Location;
-            existingEntry.Tags = entry.Tags;
-            existingEntry.Images = entry.Images;
+            existingEntry.Weather = entry.Weather ?? string.Empty;
+            existingEntry.Location = entry.Location ?? string.Empty;
+            existingEntry.Tags = entry.Tags ?? new List<string>();
+            existingEntry.Images = entry.Images ?? new List<string>();
             existingEntry.IsPrivate = entry.IsPrivate;
+            
+            // Password güncellemesi: Eğer yeni password verilmişse güncelle, yoksa mevcut password'ü koru
+            if (!string.IsNullOrEmpty(entry.Password))
+            {
+                existingEntry.Password = entry.Password;
+            }
+            // Eğer isPrivate false yapıldıysa password'ü temizle
+            else if (!entry.IsPrivate)
+            {
+                existingEntry.Password = null;
+            }
+            // Aksi halde mevcut password'ü koru (hiçbir şey yapma)
+            
             existingEntry.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();

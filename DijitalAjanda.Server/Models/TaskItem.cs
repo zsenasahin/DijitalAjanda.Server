@@ -11,7 +11,7 @@ namespace DijitalAjanda.Server.Models
         [Required]
         public string Title { get; set; }
         
-        public string Description { get; set; }
+        public string? Description { get; set; }
         
         public bool IsCompleted { get; set; } = false;
         
@@ -20,6 +20,10 @@ namespace DijitalAjanda.Server.Models
         public string Status { get; set; } = "todo";
         
         public DateTime? DueDate { get; set; }
+        
+        public int? ProjectId { get; set; }
+        [ForeignKey("ProjectId")]
+        public Project? Project { get; set; }
         
         public int DailyTaskId { get; set; }
         [ForeignKey("DailyTaskId")]

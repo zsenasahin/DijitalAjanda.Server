@@ -95,6 +95,15 @@ namespace DijitalAjanda.Server.Data
             modelBuilder.Entity<PomodoroSettings>()
                 .HasIndex(ps => ps.UserId)
                 .IsUnique();
+
+            // Ensure Project Priority and Status are strings
+            modelBuilder.Entity<Project>()
+                .Property(p => p.Priority)
+                .HasColumnType("nvarchar(max)");
+
+            modelBuilder.Entity<Project>()
+                .Property(p => p.Status)
+                .HasColumnType("nvarchar(max)");
         }
     }
 }

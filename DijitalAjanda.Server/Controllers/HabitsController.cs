@@ -24,6 +24,7 @@ namespace DijitalAjanda.Server.Controllers
         public async Task<ActionResult<IEnumerable<Habit>>> GetUserHabits(int userId)
         {
             var habits = await _context.Habits
+                .Include(h => h.Entries)
                 .Where(h => h.UserId == userId)
                 .OrderByDescending(h => h.CreatedAt)
                 .ToListAsync();
@@ -55,6 +56,10 @@ namespace DijitalAjanda.Server.Controllers
             habit.UpdatedAt = DateTime.UtcNow;
 
             _context.Habits.Add(habit);
+            await _context.SaveChangesAsync();
+
+            // Entry'leri otomatik oluştur
+            CreateHabitEntries(habit);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetHabit), new { id = habit.Id }, habit);
@@ -97,6 +102,21 @@ namespace DijitalAjanda.Server.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpPut("{id}/markComplete")]
+        public async Task<IActionResult> MarkHabitComplete(int id)
+        {
+            var habit = await _context.Habits.FindAsync(id);
+            if (habit == null)
+                return NotFound();
+
+            habit.CompletedAt = DateTime.UtcNow;
+            habit.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(habit);
         }
 
         [HttpPost("{id}/complete")]
@@ -217,6 +237,79 @@ namespace DijitalAjanda.Server.Controllers
                 return 0;
 
             return Math.Min(100, ((decimal)totalCompletions / (decimal)targetCompletions) * 100);
+        }
+
+        private void CreateHabitEntries(Habit habit)
+        {
+            // Kaç tane entry oluşturulacağını hesapla
+            int entryCount = CalculateEntryCount(habit);
+            
+            var currentDate = habit.StartDate;
+            
+            for (int i = 1; i <= entryCount; i++)
+            {
+                var entry = new HabitEntry
+                {
+                    HabitId = habit.Id,
+                    SlotNumber = i,
+                    ScheduledDate = currentDate,
+                    IsCompleted = false,
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                _context.HabitEntries.Add(entry);
+                
+                // Bir sonraki slot tarihini hesapla
+                currentDate = CalculateNextDate(currentDate, habit.FrequencyUnit);
+            }
+        }
+
+        private int CalculateEntryCount(Habit habit)
+        {
+            if (habit.EndDate == null)
+            {
+                // EndDate yoksa, default 30 gün
+                return 30;
+            }
+
+            var totalDays = (habit.EndDate.Value - habit.StartDate).Days;
+            
+            return habit.FrequencyUnit.ToLower() switch
+            {
+                "day" => totalDays + 1,
+                "week" => (totalDays / 7) + 1,
+                "month" => ((habit.EndDate.Value.Year - habit.StartDate.Year) * 12 + 
+                           habit.EndDate.Value.Month - habit.StartDate.Month) + 1,
+                _ => totalDays + 1
+            };
+        }
+
+        private DateTime CalculateNextDate(DateTime currentDate, string frequencyUnit)
+        {
+            return frequencyUnit.ToLower() switch
+            {
+                "day" => currentDate.AddDays(1),
+                "week" => currentDate.AddDays(7),
+                "month" => currentDate.AddMonths(1),
+                _ => currentDate.AddDays(1)
+            };
+        }
+
+        [HttpPut("{habitId}/entry/{entryId}/toggle")]
+        public async Task<IActionResult> ToggleEntry(int habitId, int entryId)
+        {
+            var entry = await _context.HabitEntries
+                .FirstOrDefaultAsync(e => e.HabitId == habitId && e.Id == entryId);
+
+            if (entry == null)
+                return NotFound();
+
+            entry.IsCompleted = !entry.IsCompleted;
+            entry.CompletedAt = entry.IsCompleted ? DateTime.UtcNow : null;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(entry);
         }
     }
 

@@ -41,6 +41,7 @@ namespace DijitalAjanda.Server.Controllers
                 .CountAsync();
 
             var completedHabitsToday = await _context.HabitCompletions
+                .Include(hc => hc.Habit)
                 .Where(hc => hc.Habit.UserId == userId && hc.CompletedAt.Date == today)
                 .CountAsync();
 
@@ -147,14 +148,17 @@ namespace DijitalAjanda.Server.Controllers
                 .CountAsync();
 
             var completedHabitsToday = await _context.HabitCompletions
+                .Include(hc => hc.Habit)
                 .Where(hc => hc.Habit.UserId == userId && hc.CompletedAt.Date == today)
                 .CountAsync();
 
             var completedHabitsThisWeek = await _context.HabitCompletions
+                .Include(hc => hc.Habit)
                 .Where(hc => hc.Habit.UserId == userId && hc.CompletedAt >= thisWeek)
                 .CountAsync();
 
             var completedHabitsThisMonth = await _context.HabitCompletions
+                .Include(hc => hc.Habit)
                 .Where(hc => hc.Habit.UserId == userId && hc.CompletedAt >= thisMonth)
                 .CountAsync();
 

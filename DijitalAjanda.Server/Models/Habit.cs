@@ -33,6 +33,8 @@ namespace DijitalAjanda.Server.Models
         
         public List<HabitCompletion> Completions { get; set; } = new List<HabitCompletion>();
         
+        public List<HabitEntry> Entries { get; set; } = new List<HabitEntry>();
+        
         public bool IsActive { get; set; } = true;
         
         public string ReminderTime { get; set; } // HH:mm format
@@ -41,6 +43,9 @@ namespace DijitalAjanda.Server.Models
         [ForeignKey("UserId")]
         [JsonIgnore]
         public Users? User { get; set; }
+        
+        public DateTime? CompletedAt { get; set; }
+        
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedAt { get; set; }
     }

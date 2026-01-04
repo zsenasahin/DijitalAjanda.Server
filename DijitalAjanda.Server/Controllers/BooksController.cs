@@ -6,6 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace DijitalAjanda.Server.Controllers
 {
@@ -14,10 +18,13 @@ namespace DijitalAjanda.Server.Controllers
     public class BooksController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IHttpClientFactory _httpClientFactory;
+        private const string RecommendationApiUrl = "http://localhost:5001/recommend";
 
-        public BooksController(ApplicationDbContext context)
+        public BooksController(ApplicationDbContext context, IHttpClientFactory httpClientFactory)
         {
             _context = context;
+            _httpClientFactory = httpClientFactory;
         }
 
         [HttpGet("user/{userId}")]
@@ -185,6 +192,135 @@ namespace DijitalAjanda.Server.Controllers
 
             return Ok(book);
         }
+
+        [HttpPost("user/{userId}/recommendations")]
+        public async Task<IActionResult> GetRecommendations(int userId, [FromBody] RecommendationRequest request)
+        {
+            try
+            {
+                // Kullanıcının okuduğu kitapları al (CurrentlyReading ve Completed)
+                var userBooks = await _context.Books
+                    .Where(b => b.UserId == userId && 
+                           (b.Status == "CurrentlyReading" || b.Status == "Completed"))
+                    .ToListAsync();
+
+                // Eğer kullanıcının okuduğu kitap yoksa ve "use_my_books" true ise hata döndür
+                if (request.UseMyBooks && userBooks.Count == 0)
+                {
+                    return BadRequest(new { error = "Öneri almak için en az bir kitap okumuş olmalısınız." });
+                }
+
+                // Python API'ye gönderilecek veri
+                var recommendationData = new
+                {
+                    user_books = request.UseMyBooks 
+                        ? userBooks.Select(b => new
+                        {
+                            title = b.Title ?? "",
+                            author = b.Author ?? "",
+                            tags = b.Tags ?? new List<string>(),
+                            description = b.Description ?? ""
+                        }).Cast<object>().ToList() 
+                        : new List<object>(),
+                    user_genres = request.Genres ?? new List<string>(),
+                    filters = new
+                    {
+                        genre = request.FilterGenre,
+                        author_type = request.FilterAuthorType
+                    },
+                    n_recommendations = request.NumberOfRecommendations
+                };
+
+                // Python API'ye istek at
+                var httpClient = _httpClientFactory.CreateClient();
+                httpClient.Timeout = TimeSpan.FromSeconds(30);
+
+                var jsonContent = JsonSerializer.Serialize(recommendationData, new JsonSerializerOptions
+                {
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+                });
+
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                var response = await httpClient.PostAsync(RecommendationApiUrl, content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return StatusCode((int)response.StatusCode, new { error = $"Öneri API hatası: {errorContent}" });
+                }
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var recommendations = JsonSerializer.Deserialize<RecommendationResponse>(responseContent, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                return Ok(recommendations);
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(503, new { error = $"Öneri servisi şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin. Detay: {ex.Message}" });
+            }
+            catch (TaskCanceledException)
+            {
+                return StatusCode(504, new { error = "Öneri servisi zaman aşımına uğradı. Lütfen daha sonra tekrar deneyin." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = $"Öneri alınırken bir hata oluştu: {ex.Message}" });
+            }
+        }
+    }
+
+    public class RecommendationRequest
+    {
+        public bool UseMyBooks { get; set; } = true;
+        public List<string>? Genres { get; set; }
+        public string? FilterGenre { get; set; }
+        public string? FilterAuthorType { get; set; } // "turkish", "foreign", or null
+        public int NumberOfRecommendations { get; set; } = 10;
+    }
+
+    public class RecommendationResponse
+    {
+        [JsonPropertyName("success")]
+        public bool Success { get; set; }
+        
+        [JsonPropertyName("recommendations")]
+        public List<RecommendedBook>? Recommendations { get; set; }
+        
+        [JsonPropertyName("count")]
+        public int Count { get; set; }
+        
+        [JsonPropertyName("error")]
+        public string? Error { get; set; }
+    }
+
+    public class RecommendedBook
+    {
+        [JsonPropertyName("title")]
+        public string Title { get; set; } = "";
+        
+        [JsonPropertyName("author")]
+        public string Author { get; set; } = "";
+        
+        [JsonPropertyName("genre")]
+        public string Genre { get; set; } = "";
+        
+        [JsonPropertyName("rating")]
+        public double Rating { get; set; }
+        
+        [JsonPropertyName("pages")]
+        public int Pages { get; set; }
+        
+        [JsonPropertyName("publisher")]
+        public string Publisher { get; set; } = "";
+        
+        [JsonPropertyName("description")]
+        public string Description { get; set; } = "";
+        
+        [JsonPropertyName("similarity_score")]
+        public double SimilarityScore { get; set; }
     }
 
     public class ReadingProgressRequest

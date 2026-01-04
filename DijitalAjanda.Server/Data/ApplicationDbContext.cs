@@ -18,6 +18,7 @@ namespace DijitalAjanda.Server.Data
         public DbSet<Users> Users { get; set; }
         public DbSet<Habit> Habits { get; set; }
         public DbSet<HabitCompletion> HabitCompletions { get; set; }
+        public DbSet<HabitEntry> HabitEntries { get; set; }
         public DbSet<Goal> Goals { get; set; }
         public DbSet<JournalEntry> JournalEntries { get; set; }
         public DbSet<Book> Books { get; set; }
@@ -77,6 +78,11 @@ namespace DijitalAjanda.Server.Data
                 .HasOne(hc => hc.Habit)
                 .WithMany(h => h.Completions)
                 .HasForeignKey(hc => hc.HabitId);
+
+            modelBuilder.Entity<HabitEntry>()
+                .HasOne(he => he.Habit)
+                .WithMany(h => h.Entries)
+                .HasForeignKey(he => he.HabitId);
 
             modelBuilder.Entity<TaskItem>()
                 .HasOne(ti => ti.DailyTask)

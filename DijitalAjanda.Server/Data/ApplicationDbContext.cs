@@ -35,6 +35,10 @@ namespace DijitalAjanda.Server.Data
         public DbSet<TaskStatusItem> TaskStatusItems { get; set; }
         public DbSet<UserProfile> UserProfiles { get; set; }
         public DbSet<JournalSentiment> JournalSentiments { get; set; }
+        public DbSet<Badge> Badges { get; set; }
+        public DbSet<UserBadge> UserBadges { get; set; }
+        public DbSet<Transaction> Transactions { get; set; }
+        public DbSet<Note> Notes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace DijitalAjanda.Server.Models
 {
@@ -18,6 +19,7 @@ namespace DijitalAjanda.Server.Models
         public int HabitId { get; set; }
 
         [ForeignKey("HabitId")]
+        [JsonIgnore]
         public Habit? Habit { get; set; }
 
         [Required]
